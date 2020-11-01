@@ -1,0 +1,57 @@
+version: '3'
+services:
+  app:
+    # If the image doesn't exsit on Docker Hub we need to add a 'build' parameter. 'build' + 'image' is the same as 'docker build -t phpapp/app:latest -f docker/app/Dockerfile docker/app'
+    build:
+      context: ./docker/app
+      dockerfile: Dockerfile
+    image: shippingdocker/app:latest
+    networks:
+      - appnet
+    volumes:
+      - .:/var/www/html
+    ports:
+      - ${APP_PORT}:80
+    working_dir: /var/www/html
+  cache:
+    image: redis:alpine
+    networks:
+      - appnet
+    volumes:
+      # see docs - https://hub.docker.com/_/redis and here https://github.com/docker-library/redis/blob/7ccc22760cc9b659916678a52654be8f43757551/6.0/alpine/Dockerfile
+      - cachedata:/data
+    ports:
+      - 6379:6379
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: homestead
+      MYSQL_USER: homestead
+      MYSQL_PASSWORD: secret
+    networks:
+      - appnet 
+    volumes:
+      # more details in the docs - https://hub.docker.com/_/mysql
+      - dbdata:/var/lib/mysql
+    ports:
+      - ${DB_PORT}:3306
+  node:
+    build:
+      context: ./docker/node
+      dockerfile: Dockerfile
+    image: shippingdocker/node:latest
+    networks:
+      - appnet
+    volumes:
+      - .:/opt
+    working_dir: /opt
+    command: echo hi
+networks:
+  appnet:
+    driver: bridge
+volumes:
+  dbdata:
+    driver: local
+  cachedata:
+    driver: local
